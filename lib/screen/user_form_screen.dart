@@ -3,7 +3,7 @@ import '../model/UserModel.dart';
 import '../api/user_service.dart';
 
 class UserFormScreen extends StatefulWidget {
-  final UserModel? user;
+  final UserData? user;
 
   const UserFormScreen({super.key, this.user});
 
@@ -48,18 +48,16 @@ class _UserFormScreenState extends State<UserFormScreen> {
       });
 
       try {
-        final user = UserModel(
-          id: widget.user?.id,
+        final user = UserData(
+          id: widget.user?.id ?? 0, // id bisa 0 atau null sesuai API
           name: _nameController.text.trim(),
           role: _selectedRole ?? 'apoteker',
-          email: _emailController.text.trim().isEmpty
-              ? null
-              : _emailController.text.trim(),
-          phone: _phoneController.text.trim().isEmpty
-              ? null
-              : _phoneController.text.trim(),
-          shift: _selectedShift,
+          email: _emailController.text.trim(),
+          phone: _phoneController.text.trim(),
+          shift: _selectedShift ?? '',
+          password: '', // kosong saat update jika password tidak diubah
         );
+
 
         bool success;
         if (widget.user != null) {

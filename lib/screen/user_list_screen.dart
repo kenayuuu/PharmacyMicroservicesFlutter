@@ -14,7 +14,7 @@ class UserListScreen extends StatefulWidget {
 
 class _UserListScreenState extends State<UserListScreen> {
   final UserService _userService = UserService();
-  List<UserModel> _users = [];
+  List<UserData> _users = [];
   bool _isLoading = true;
 
   @override
@@ -29,9 +29,9 @@ class _UserListScreenState extends State<UserListScreen> {
     });
 
     try {
-      final users = await _userService.getUsers();
+      final usersResponse = await _userService.getUsers();
       setState(() {
-        _users = users;
+        _users = usersResponse.data;
         _isLoading = false;
       });
     } catch (e) {
@@ -48,7 +48,10 @@ class _UserListScreenState extends State<UserListScreen> {
 
   Future<void> _deleteUser(int id) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (authProvider.user?.id == id) {
+
+    // tidak bisa hapus diri sendiri
+    final currentUser = authProvider.user;
+    if (currentUser != null && currentUser.id == id) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Anda tidak dapat menghapus akun sendiri')),
       );
@@ -103,54 +106,67 @@ class _UserListScreenState extends State<UserListScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _users.isEmpty
-              ? const Center(child: Text('Tidak ada users'))
-              : RefreshIndicator(
-                  onRefresh: _loadUsers,
-                  child: ListView.builder(
-                    itemCount: _users.length,
-                    itemBuilder: (context, index) {
-                      final user = _users[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text(user.name[0].toUpperCase()),
-                          ),
-                          title: Text(user.name),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Role: ${user.role}'),
-                              if (user.email != null) Text('Email: ${user.email}'),
-                              if (user.phone != null) Text('Phone: ${user.phone}'),
-                              if (user.shift != null) Text('Shift: ${user.shift}'),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () async {
-                                  await Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) => UserFormScreen(user: user),
-                                    ),
-                                  );
-                                  _loadUsers();
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => _deleteUser(user.id!),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+          ? const Center(child: Text('Tidak ada users'))
+          : RefreshIndicator(
+        onRefresh: _loadUsers,
+        child: ListView.builder(
+          itemCount: _users.length,
+          itemBuilder: (context, index) {
+            final user = _users[index];
+
+            // pastikan semua field nullable aman
+            final name = user.name ?? '';
+            final email = user.email ?? '';
+            final phone = user.phone ?? '';
+            final shift = user.shift ?? '';
+            final id = user.id; // pastikan UserData.id tidak nullable
+
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?'),
                 ),
+                title: Text(name),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Role: ${user.role ?? ''}'),
+                    if (email.isNotEmpty) Text('Email: $email'),
+                    if (phone.isNotEmpty) Text('Phone: $phone'),
+                    if (shift.isNotEmpty) Text('Shift: $shift'),
+                  ],
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                UserFormScreen(user: user),
+                          ),
+                        );
+                        _loadUsers();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        if (id != null) _deleteUser(id);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           await Navigator.of(context).push(

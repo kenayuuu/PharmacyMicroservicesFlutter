@@ -25,29 +25,29 @@ class UserModel {
 }
 
 class UserData {
-  final int id;
+  final int? id;
   final String name;
   final String role;
-  final String email;
-  final String phone;
-  final String shift;
-  final String password;
+  final String? email;
+  final String? phone;
+  final String? shift;
+  final String? password;
 
   UserData({
-    required this.id,
+    this.id,
     required this.name,
     required this.role,
-    required this.email,
-    required this.phone,
-    required this.shift,
-    required this.password,
+    this.email,
+    this.phone,
+    this.shift,
+    this.password,
   });
 
   factory UserData.fromJson(Map<String, dynamic> json) {
     return UserData(
       id: json['id'],
-      name: json['name'],
-      role: json['role'],
+      name: json['name'] ?? '',
+      role: json['role'] ?? '',
       email: json['email'],
       phone: json['phone'],
       shift: json['shift'],
@@ -56,14 +56,15 @@ class UserData {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      "id": id,
+    final map = {
+      if (id != null) "id": id,
       "name": name,
       "role": role,
-      "email": email,
-      "phone": phone,
-      "shift": shift,
-      "password": password,
+      if (email != null) "email": email,
+      if (phone != null) "phone": phone,
+      if (shift != null) "shift": shift,
+      if (password != null) "password": password,
     };
+    return map;
   }
 }

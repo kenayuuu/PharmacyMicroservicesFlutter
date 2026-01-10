@@ -5,11 +5,11 @@ import '../model/UserModel.dart';
 import '../api/auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
-  UserModel? _user;
+  UserData? _user;
   String? _token;
   bool _isLoading = false;
 
-  UserModel? get user => _user;
+  UserData? get user => _user;
   String? get token => _token;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
@@ -20,50 +20,65 @@ class AuthProvider with ChangeNotifier {
     _loadUserFromStorage();
   }
 
+  // Load user dari SharedPreferences
   Future<void> _loadUserFromStorage() async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('user');
     final token = prefs.getString('token');
 
     if (userJson != null && token != null) {
-      _user = UserModel.fromJson(jsonDecode(userJson));
+      _user = UserData.fromJson(jsonDecode(userJson));
       _token = token;
       notifyListeners();
     }
   }
 
-  Future<void> _saveUserToStorage(UserModel user, String token) async {
+  // Simpan user ke SharedPreferences
+  Future<void> _saveUserToStorage(UserData user, String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user', jsonEncode(user.toJson()));
     await prefs.setString('token', token);
   }
 
+  // LOGIN
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      final result = await _authService.login(email: email, password: password);
+      final result = await _authService.login(
+        email: email,
+        password: password,
+      );
 
       if (result['success'] == true) {
-        _user = result['data'] as UserModel;
-        _token = result['token'] as String;
-        await _saveUserToStorage(_user!, _token!);
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _isLoading = false;
-        notifyListeners();
-        return false;
+        final userModel = result['data'] as UserModel;
+
+        if (userModel.data.isNotEmpty) {
+          _user = userModel.data.first;
+          _token = result['token'] as String;
+
+          await _saveUserToStorage(_user!, _token!);
+
+          _isLoading = false;
+          notifyListeners();
+          return true;
+        }
       }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
+      debugPrint('LOGIN ERROR: $e');
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
+
+  // REGISTER
   Future<bool> register({
     required String name,
     required String email,
@@ -84,15 +99,16 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (result['success'] == true) {
-        _user = result['data'] as UserModel;
+        final userMap = result['data'] as Map<String, dynamic>;
+        _user = UserData.fromJson(userMap);
         _isLoading = false;
         notifyListeners();
         return true;
-      } else {
-        _isLoading = false;
-        notifyListeners();
-        return false;
       }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
       _isLoading = false;
       notifyListeners();
@@ -100,6 +116,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // LOGOUT
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user');
