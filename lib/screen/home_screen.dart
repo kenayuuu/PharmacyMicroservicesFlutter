@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../model/UserModel.dart';
 import 'login_screen.dart';
 import 'product_list_screen.dart';
 import 'user_list_screen.dart';
@@ -13,7 +14,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user;
+    final user = authProvider.user as UserData?;
     final isOwner = user?.role == 'owner';
 
     return Scaffold(

@@ -28,18 +28,23 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      final success = await authProvider.login(
+      final result = await authProvider.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
 
-      if (success && mounted) {
+      if (result['success'] == true && mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else if (mounted) {
+        final errorMessage = result['message'] ?? 'Login gagal. Periksa email dan password Anda.';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login gagal. Periksa email dan password Anda.')),
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
         );
       }
     }

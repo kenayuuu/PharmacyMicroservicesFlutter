@@ -41,7 +41,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // LOGIN
-  Future<bool> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     _isLoading = true;
     notifyListeners();
 
@@ -52,28 +52,31 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (result['success'] == true) {
-        final userModel = result['data'] as UserModel;
+        final userData = result['data'] as UserData;
+        _user = userData;
+        _token = result['token'] as String? ?? '';
 
-        if (userModel.data.isNotEmpty) {
-          _user = userModel.data.first;
-          _token = result['token'] as String;
+        await _saveUserToStorage(_user!, _token!);
 
-          await _saveUserToStorage(_user!, _token!);
-
-          _isLoading = false;
-          notifyListeners();
-          return true;
-        }
+        _isLoading = false;
+        notifyListeners();
+        return {'success': true};
+      } else {
+        _isLoading = false;
+        notifyListeners();
+        return {
+          'success': false,
+          'message': result['message'] ?? 'Login failed'
+        };
       }
-
-      _isLoading = false;
-      notifyListeners();
-      return false;
     } catch (e) {
       debugPrint('LOGIN ERROR: $e');
       _isLoading = false;
       notifyListeners();
-      return false;
+      return {
+        'success': false,
+        'message': 'Error: $e'
+      };
     }
   }
 
@@ -99,8 +102,8 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (result['success'] == true) {
-        final userMap = result['data'] as Map<String, dynamic>;
-        _user = UserData.fromJson(userMap);
+        final userData = result['data'] as UserData;
+        _user = userData;
         _isLoading = false;
         notifyListeners();
         return true;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../model/ReviewModel.dart';
+import '../model/UserModel.dart';
 import '../api/review_service.dart';
 import '../providers/auth_provider.dart';
 
@@ -114,7 +115,8 @@ class _ReviewListScreenState extends State<ReviewListScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final isOwner = authProvider.user?.role == 'owner';
+    final user = authProvider.user as UserData?;
+    final isOwner = user?.role == 'owner';
 
     return Scaffold(
       appBar: AppBar(

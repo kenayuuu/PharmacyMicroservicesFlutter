@@ -6,6 +6,16 @@ import '../config/api_config.dart';
 class AuthService {
   static const String baseUrl = ApiConfig.userServiceUrl;
 
+  bool _isJsonValid(String body) {
+    try {
+      jsonDecode(body);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ================= REGISTER =================
   Future<Map<String, dynamic>> register({
     required String name,
     required String email,
@@ -15,7 +25,7 @@ class AuthService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/users/register'),
+        Uri.parse('$baseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'name': name,
@@ -26,25 +36,39 @@ class AuthService {
         }),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': UserModel.fromJson(data)};
-      } else {
-        final error = jsonDecode(response.body);
-        return {'success': false, 'message': error['message'] ?? 'Registration failed'};
+      if (!_isJsonValid(response.body)) {
+        return {
+          'success': false,
+          'message': 'Server tidak mengirim JSON yang valid'
+        };
       }
+
+      final body = jsonDecode(response.body);
+
+      // User bisa berada di beberapa key berbeda
+      final userJson =
+          body['user'] ??
+          body['data'] ??
+          (body is List && body.isNotEmpty ? body.first : null) ??
+          body;
+
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201,
+        'data': UserData.fromJson(userJson),
+      };
     } catch (e) {
       return {'success': false, 'message': 'Error: $e'};
     }
   }
 
+  // ================= LOGIN =================
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/users/login'),
+        Uri.parse('$baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -52,19 +76,37 @@ class AuthService {
         }),
       );
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      if (!_isJsonValid(response.body)) {
         return {
-          'success': true,
-          'data': UserModel.fromJson(data['user']),
-          'token': data['token'] ?? '',
+          'success': false,
+          'message': 'Response server bukan JSON. Periksa backend.'
         };
-      } else {
-        final error = jsonDecode(response.body);
-        return {'success': false, 'message': error['message'] ?? 'Login failed'};
       }
+
+      final body = jsonDecode(response.body);
+
+      final userJson =
+          body['user'] ??
+          body['data'] ??
+          (body is List && body.isNotEmpty ? body.first : null) ??
+          body;
+
+      final token =
+          body['token'] ??
+          body['access_token'] ??
+          body['jwt'] ??
+          '';
+
+      return {
+        'success': response.statusCode == 200 || response.statusCode == 201,
+        'data': UserData.fromJson(userJson),
+        'token': token,
+      };
     } catch (e) {
-      return {'success': false, 'message': 'Error: $e'};
+      return {
+        'success': false,
+        'message': 'Error login: $e',
+      };
     }
   }
 }

@@ -5,7 +5,7 @@ class ApiConfig {
   
   //static const String baseUrl = 'http://localhost';
   // static const String baseUrl = 'http://10.0.2.2'; // Uncomment for Android emulator
-   static const String baseUrl = 'http://192.168.18.65'; // Use your computer's IP for physical device
+   static const String baseUrl = 'http://192.168.1.39'; // Use your computer's IP for physical device
   
   static const String userServiceUrl = '$baseUrl:4000';
   static const String productServiceUrl = '$baseUrl:8001';
