@@ -29,10 +29,20 @@ class _ReportTransactionScreenState extends State<ReportTransactionScreen> {
     });
 
     try {
-      final response = await _transactionService.getTransactionReports(); 
-      // response sekarang berupa Map { 'transactions': [...], 'summary': {...} }
+      final response =
+      await _transactionService.getTransactionReports();
+
+      // ✅ AMBIL LIST TRANSAKSI
+      final List<TransactionModel> transactions =
+      response['transactions'] as List<TransactionModel>;
+
+      // ✅ SORTING (tanpa ubah logika)
+      transactions.sort(
+            (a, b) => b.trx.compareTo(a.trx),
+      );
+
       setState(() {
-        _transactions = response['transactions'] as List<TransactionModel>;
+        _transactions = transactions;
         _totalTransaksi = response['summary']['total_transaksi'] ?? 0;
         _totalPendapatan = response['summary']['total_pendapatan'] ?? 0;
         _isLoading = false;
@@ -50,7 +60,8 @@ class _ReportTransactionScreenState extends State<ReportTransactionScreen> {
   }
 
   int _calculateTotal(TransactionModel transaction) {
-    return transaction.items.fold(0, (sum, item) => sum + item.price * item.qty);
+    return transaction.items.fold(
+        0, (sum, item) => sum + item.price * item.qty);
   }
 
   @override
@@ -62,92 +73,97 @@ class _ReportTransactionScreenState extends State<ReportTransactionScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: _loadReport,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Summary
-                    Card(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      child: Padding(
+        onRefresh: _loadReport,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ===== SUMMARY =====
+              Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Total Transaksi: $_totalTransaksi',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Total Pendapatan: Rp $_totalPendapatan',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ===== LIST TRANSAKSI =====
+              ..._transactions.map((trx) {
+                final total = _calculateTotal(trx);
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    key: ValueKey(trx.trx), // ✅ WAJIB
+                    leading: const Icon(Icons.receipt_long),
+                    title: Text('TRX: ${trx.trx}'),
+                    subtitle: Text(
+                        'Total: Rp ${total.toStringAsFixed(0)}'),
+                    children: [
+                      Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Total Transaksi: $_totalTransaksi',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                              'Payment Method: ${trx.paymentMethod}',
                             ),
+                            if (trx.note != null &&
+                                trx.note!.isNotEmpty)
+                              Text('Note: ${trx.note}'),
                             const SizedBox(height: 8),
+                            const Divider(),
+                            const Text('Items:'),
+                            ...trx.items.map(
+                                  (item) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 4),
+                                child: Text(
+                                  '- ${item.productName} x${item.qty} @ Rp ${item.price.toStringAsFixed(0)}',
+                                ),
+                              ),
+                            ),
+                            const Divider(),
                             Text(
-                              'Total Pendapatan: Rp $_totalPendapatan',
+                              'Total: Rp ${total.toStringAsFixed(0)}',
                               style: Theme.of(context)
                                   .textTheme
                                   .titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
+                                  ?.copyWith(
+                                  fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    // List Transaksi
-                    ..._transactions.map((trx) {
-                      final total = _calculateTotal(trx);
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ExpansionTile(
-                          leading: const Icon(Icons.receipt_long),
-                          title: Text('TRX: ${trx.trx}'),
-                          subtitle: Text('Total: Rp ${total.toStringAsFixed(0)}'),
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Payment Method: ${trx.paymentMethod}',
-                                    style: Theme.of(context).textTheme.bodyMedium,
-                                  ),
-                                  if (trx.note != null && trx.note!.isNotEmpty)
-                                    Text(
-                                      'Note: ${trx.note}',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                    ),
-                                  const SizedBox(height: 8),
-                                  const Divider(),
-                                  const Text('Items:'),
-                                  ...trx.items.map((item) => Padding(
-                                        padding: const EdgeInsets.symmetric(vertical: 4),
-                                        child: Text(
-                                          '- ${item.productName} x${item.qty} @ Rp ${item.price.toStringAsFixed(0)}',
-                                        ),
-                                      )),
-                                  const Divider(),
-                                  Text(
-                                    'Total: Rp ${total.toStringAsFixed(0)}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ],
-                ),
-              ),
-            ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 class ReviewModel {
-  final String? id;
+  final String? id; // ⬅️ nullable
+  final int productId;
   final int userId;
   final int rating;
   final String review;
@@ -7,6 +8,7 @@ class ReviewModel {
 
   ReviewModel({
     this.id,
+    required this.productId,
     required this.userId,
     required this.rating,
     required this.review,
@@ -15,26 +17,14 @@ class ReviewModel {
 
   factory ReviewModel.fromJson(Map<String, dynamic> json) {
     return ReviewModel(
-      id: json['_id'] ?? json['id'],
-      userId: json['user_id'] ?? json['userId'],
-      rating: json['rating'],
-      review: json['review'],
+      id: json['_id']?.toString(),
+      productId: json['product_id'] ?? 0,
+      userId: json['user_id'] ?? 0,
+      rating: json['rating'] ?? 0,
+      review: json['review'] ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
-          : json['createdAt'] != null
-              ? DateTime.parse(json['createdAt'])
-              : DateTime.now(),
+          : DateTime.now(),
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      if (id != null) '_id': id,
-      if (id != null) 'id': id,
-      'user_id': userId,
-      'rating': rating,
-      'review': review,
-      'created_at': createdAt.toIso8601String(),
-    };
   }
 }

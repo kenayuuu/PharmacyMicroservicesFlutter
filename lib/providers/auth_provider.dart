@@ -9,6 +9,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   UserData? _user;
 
+  // ================= GETTERS =================
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
   UserData? get user => _user;
@@ -25,11 +26,11 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await _authService.register(
-      name: name,
-      email: email,
-      phone: phone,
-      password: password,
-      role: role,
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      password: password.trim(),
+      role: role.trim().toLowerCase(),
     );
 
     _isLoading = false;
@@ -47,15 +48,15 @@ class AuthProvider extends ChangeNotifier {
 
   // ================= LOGIN =================
   Future<Map<String, dynamic>> login(
-    String email,
-    String password,
-  ) async {
+      String email,
+      String password,
+      ) async {
     _isLoading = true;
     notifyListeners();
 
     final result = await _authService.login(
-      email: email,
-      password: password,
+      email: email.trim().toLowerCase(), // 🔑 FIX UTAMA
+      password: password.trim(),         // 🔑 FIX UTAMA
     );
 
     _isLoading = false;

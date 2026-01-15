@@ -3,12 +3,14 @@ class TransactionModel {
   final List<TransactionItem> items;
   final String paymentMethod;
   final String? note;
+  final String createdAt;
 
   TransactionModel({
     required this.trx,
     required this.items,
     required this.paymentMethod,
     this.note,
+    required this.createdAt,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class TransactionModel {
           .toList(),
       paymentMethod: json['payment_method'],
       note: json['note'],
+      createdAt: json['created_at'],
     );
   }
 
@@ -28,6 +31,7 @@ class TransactionModel {
       'items': items.map((e) => e.toJson()).toList(),
       'payment_method': paymentMethod,
       'note': note,
+      'created_at': createdAt,
     };
   }
 }

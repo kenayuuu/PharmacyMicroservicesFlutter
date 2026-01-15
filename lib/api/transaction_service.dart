@@ -82,27 +82,22 @@ class TransactionService {
   Future<bool> updateTransaction(String trx, TransactionModel transaction) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/transactions'),
+        Uri.parse('$baseUrl/transactions/$trx'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'trx': trx,
           'items': transaction.items.map((e) => e.toJson()).toList(),
           'payment_method': transaction.paymentMethod,
           'note': transaction.note ?? '',
         }),
       );
 
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        print('Failed to update transaction: ${response.statusCode} - ${response.body}');
-        return false;
-      }
+      return response.statusCode == 200;
     } catch (e) {
       print('Error updating transaction: $e');
       return false;
     }
   }
+
 
   // ========== DELETE TRANSACTION ==========
   Future<bool> deleteTransaction(String trx) async {

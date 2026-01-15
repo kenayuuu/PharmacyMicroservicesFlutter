@@ -4,9 +4,12 @@ import '../model/ReviewModel.dart';
 import '../model/UserModel.dart';
 import '../api/review_service.dart';
 import '../providers/auth_provider.dart';
+import 'add_review_screen.dart'; // pastikan sudah import
 
 class ReviewListScreen extends StatefulWidget {
-  const ReviewListScreen({super.key});
+  final int? productId; // untuk review produk tertentu
+
+  const ReviewListScreen({super.key, this.productId});
 
   @override
   State<ReviewListScreen> createState() => _ReviewListScreenState();
@@ -24,30 +27,27 @@ class _ReviewListScreenState extends State<ReviewListScreen> {
   }
 
   Future<void> _loadReviews() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      final reviews = await _reviewService.getReviews();
+      final reviews = widget.productId != null
+          ? await _reviewService.getReviewsByProduct(widget.productId!)
+          : await _reviewService.getReviews(); // semua review
       setState(() {
         _reviews = reviews;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error memuat review: $e')));
       }
     }
   }
 
   Future<void> _deleteReview(ReviewModel review) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     if (authProvider.user?.role != 'owner') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Hanya owner yang dapat menghapus review')),
@@ -55,18 +55,25 @@ class _ReviewListScreenState extends State<ReviewListScreen> {
       return;
     }
 
+    if (review.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ID review tidak valid')),
+      );
+      return;
+    }
+
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Hapus Review'),
         content: const Text('Apakah Anda yakin ingin menghapus review ini?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Hapus'),
           ),
         ],
@@ -74,41 +81,32 @@ class _ReviewListScreenState extends State<ReviewListScreen> {
     );
 
     if (confirm == true) {
-      try {
-        bool success;
-        if (review.id != null) {
-          success = await _reviewService.deleteReview(review.id!);
-        } else {
-          success = await _reviewService.deleteReviewByUserId(review.userId);
-        }
-        
-        if (success) {
-          _loadReviews();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Review berhasil dihapus')),
-            );
-          }
-        }
-      } catch (e) {
+      final success = await _reviewService.deleteReview(review.id!);
+      if (success) {
+        _loadReviews();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
+            const SnackBar(content: Text('Review berhasil dihapus')),
           );
         }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menghapus review')),
+        );
       }
     }
   }
 
   Widget _buildRatingStars(int rating) {
     return Row(
-      children: List.generate(5, (index) {
-        return Icon(
+      children: List.generate(
+        5,
+            (index) => Icon(
           index < rating ? Icons.star : Icons.star_border,
           color: Colors.amber,
           size: 20,
-        );
-      }),
+        ),
+      ),
     );
   }
 
@@ -119,51 +117,71 @@ class _ReviewListScreenState extends State<ReviewListScreen> {
     final isOwner = user?.role == 'owner';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daftar Review'),
-      ),
+      appBar: AppBar(title: const Text('Daftar Review')),
+
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _reviews.isEmpty
-              ? const Center(child: Text('Tidak ada review'))
-              : RefreshIndicator(
-                  onRefresh: _loadReviews,
-                  child: ListView.builder(
-                    itemCount: _reviews.length,
-                    itemBuilder: (context, index) {
-                      final review = _reviews[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text('U${review.userId}'),
-                          ),
-                          title: Text('User ID: ${review.userId}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 8),
-                              _buildRatingStars(review.rating),
-                              const SizedBox(height: 8),
-                              Text(review.review),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Tanggal: ${review.createdAt.toString().substring(0, 16)}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          trailing: isOwner
-                              ? IconButton(
-                                  icon: const Icon(Icons.delete),
-                                  onPressed: () => _deleteReview(review),
-                                )
-                              : null,
-                        ),
-                      );
-                    },
-                  ),
+          ? const Center(child: Text('Tidak ada review'))
+          : RefreshIndicator(
+        onRefresh: _loadReviews,
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: _reviews.length,
+          itemBuilder: (context, index) {
+            final review = _reviews[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: ListTile(
+                leading: CircleAvatar(
+                  child: Text('U${review.userId}'),
                 ),
+                title: Text('User ID: ${review.userId}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    _buildRatingStars(review.rating),
+                    const SizedBox(height: 8),
+                    Text(review.review),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tanggal: ${review.createdAt.toLocal().toString().substring(0, 16)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+                trailing: isOwner
+                    ? IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => _deleteReview(review),
+                )
+                    : null,
+              ),
+            );
+          },
+        ),
+      ),
+
+      // Tombol tambah review
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: () async {
+          // Pastikan tidak mengirim 0 jika productId null
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddReviewScreen(
+                productId: widget.productId, // biarkan null, dropdown di AddReviewScreen
+              ),
+            ),
+          );
+
+          if (result == true) {
+            _loadReviews(); // refresh setelah tambah review
+          }
+        },
+      ),
     );
   }
 }
