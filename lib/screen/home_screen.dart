@@ -7,6 +7,7 @@ import 'product_list_screen.dart';
 import 'user_list_screen.dart';
 import 'transaction_list_screen.dart';
 import 'review_list_screen.dart';
+import 'report_transaction_screen.dart'; // ← Import screen laporan
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -14,8 +15,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.user as UserData?;
-    final isOwner = user?.role == 'owner';
+    final UserData? user = authProvider.user;
+    final bool isOwner = user != null && user.role == 'owner';
 
     return Scaffold(
       appBar: AppBar(
@@ -23,13 +24,13 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              }
+            onPressed: () {
+              authProvider.logout();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(
+                  builder: (context) => const LoginScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -57,7 +58,7 @@ class HomeScreen extends StatelessWidget {
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           Text(
-                            'Role: ${user?.role?.toUpperCase() ?? ""}',
+                            'Role: ${user != null ? user.role.toUpperCase() : ""}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -80,7 +81,9 @@ class HomeScreen extends StatelessWidget {
                     title: 'Produk',
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const ProductListScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const ProductListScreen(),
+                        ),
                       );
                     },
                   ),
@@ -90,7 +93,9 @@ class HomeScreen extends StatelessWidget {
                     title: 'Transaksi',
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const TransactionListScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const TransactionListScreen(),
+                        ),
                       );
                     },
                   ),
@@ -100,21 +105,38 @@ class HomeScreen extends StatelessWidget {
                     title: 'Review',
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const ReviewListScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const ReviewListScreen(),
+                        ),
                       );
                     },
                   ),
-                  if (isOwner)
+                  if (isOwner) ...[
                     _buildMenuCard(
                       context,
                       icon: Icons.people,
                       title: 'Users',
                       onTap: () {
                         Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const UserListScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const UserListScreen(),
+                          ),
                         );
                       },
                     ),
+                    _buildMenuCard(
+                      context,
+                      icon: Icons.bar_chart,
+                      title: 'Laporan',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ReportTransactionScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -137,7 +159,11 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              icon,
+              size: 48,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(height: 16),
             Text(
               title,

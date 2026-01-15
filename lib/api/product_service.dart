@@ -4,28 +4,37 @@ import '../model/ProductModel.dart';
 import '../config/api_config.dart';
 
 class ProductService {
-  static const String baseUrl = ApiConfig.productServiceUrl;
 
+  // ================= GET ALL PRODUCTS =================
   Future<List<ProductModel>> getProducts() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/products'));
+      final url = '${ApiConfig.productServiceUrl}/products';
+      print('FETCH URL: $url');
+
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => ProductModel.fromJson(json)).toList();
+        final body = jsonDecode(response.body);
+        final List data = body['data'];
+
+        return data.map((e) => ProductModel.fromJson(e)).toList();
+      } else {
+        throw Exception('Status code: ${response.statusCode}');
       }
-      return [];
     } catch (e) {
       throw Exception('Error fetching products: $e');
     }
   }
 
+  // ================= GET PRODUCT BY ID =================
   Future<ProductModel?> getProductById(int id) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/products/$id'));
+      final url = '${ApiConfig.productServiceUrl}/products?id=$id';
+      final response = await http.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        return ProductModel.fromJson(jsonDecode(response.body));
+        final body = jsonDecode(response.body);
+        return ProductModel.fromJson(body['data']);
       }
       return null;
     } catch (e) {
@@ -33,10 +42,11 @@ class ProductService {
     }
   }
 
+  // ================= CREATE PRODUCT =================
   Future<bool> createProduct(ProductModel product) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/api/products'),
+        Uri.parse('${ApiConfig.productServiceUrl}/products'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(product.toJson()),
       );
@@ -47,10 +57,11 @@ class ProductService {
     }
   }
 
-  Future<bool> updateProduct(int id, ProductModel product) async {
+  // ================= UPDATE PRODUCT =================
+  Future<bool> updateProduct(ProductModel product) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/api/products/$id'),
+        Uri.parse('${ApiConfig.productServiceUrl}/products'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(product.toJson()),
       );
@@ -61,11 +72,14 @@ class ProductService {
     }
   }
 
+  // ================= DELETE PRODUCT =================
   Future<bool> deleteProduct(int id) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/api/products/$id'));
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.productServiceUrl}/products?id=$id'),
+      );
 
-      return response.statusCode == 200 || response.statusCode == 204;
+      return response.statusCode == 200;
     } catch (e) {
       throw Exception('Error deleting product: $e');
     }

@@ -12,6 +12,7 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> {
   final ProductService _productService = ProductService();
+
   List<ProductModel> _products = [];
   bool _isLoading = true;
 
@@ -22,9 +23,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   Future<void> _loadProducts() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final products = await _productService.getProducts();
@@ -33,54 +32,49 @@ class _ProductListScreenState extends State<ProductListScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal load produk: $e')),
+      );
     }
   }
 
   Future<void> _deleteProduct(int id) async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Hapus Produk'),
-        content: const Text('Apakah Anda yakin ingin menghapus produk ini?'),
+        content: const Text('Yakin ingin menghapus produk ini?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Hapus'),
           ),
         ],
       ),
     );
 
-    if (confirm == true) {
-      try {
-        final success = await _productService.deleteProduct(id);
-        if (success) {
-          _loadProducts();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Produk berhasil dihapus')),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
-        }
+    if (confirm != true) return;
+
+    try {
+      final success = await _productService.deleteProduct(id);
+      if (success) {
+        _loadProducts();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Produk berhasil dihapus')),
+        );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     }
   }
 
@@ -101,12 +95,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     itemBuilder: (context, index) {
                       final product = _products[index];
                       return Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         child: ListTile(
-                          leading: const Icon(Icons.medication),
+                          leading: const Icon(Icons.inventory_2),
                           title: Text(product.name),
                           subtitle: Text(
-                            'Rp ${product.price.toStringAsFixed(0)} | Stock: ${product.stock}',
+                            'Rp ${product.price} | Stok: ${product.stock}',
                           ),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -114,9 +109,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               IconButton(
                                 icon: const Icon(Icons.edit),
                                 onPressed: () async {
-                                  await Navigator.of(context).push(
+                                  await Navigator.push(
+                                    context,
                                     MaterialPageRoute(
-                                      builder: (context) => ProductFormScreen(product: product),
+                                      builder: (_) => ProductFormScreen(
+                                        product: product,
+                                      ),
                                     ),
                                   );
                                   _loadProducts();
@@ -128,29 +126,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
                               ),
                             ],
                           ),
-                          onTap: () async {
-                            await Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => ProductFormScreen(product: product),
-                              ),
-                            );
-                            _loadProducts();
-                          },
                         ),
                       );
                     },
                   ),
                 ),
       floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
         onPressed: () async {
-          await Navigator.of(context).push(
+          await Navigator.push(
+            context,
             MaterialPageRoute(
-              builder: (context) => const ProductFormScreen(),
+              builder: (_) => const ProductFormScreen(),
             ),
           );
           _loadProducts();
         },
-        child: const Icon(Icons.add),
       ),
     );
   }

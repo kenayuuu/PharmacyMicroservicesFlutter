@@ -1,7 +1,6 @@
 class ProductModel {
   final int? id;
   final String name;
-  final String description;
   final int price;
   final int stock;
   final String? category;
@@ -9,7 +8,6 @@ class ProductModel {
   ProductModel({
     this.id,
     required this.name,
-    required this.description,
     required this.price,
     required this.stock,
     this.category,
@@ -17,12 +15,18 @@ class ProductModel {
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: json['id'],
-      name: json['name'],
-      description: json['description'],
-      price: json['price'],
-      stock: json['stock'],
-      category: json['category'],
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()),
+
+      name: json['name']?.toString() ?? '',
+
+      // ⬅️ FIX UTAMA (API kirim "5000.00")
+      price: double.parse(json['price'].toString()).toInt(),
+
+      stock: int.parse(json['stock'].toString()),
+
+      category: json['category']?.toString(),
     );
   }
 
@@ -30,7 +34,6 @@ class ProductModel {
     return {
       if (id != null) 'id': id,
       'name': name,
-      'description': description,
       'price': price,
       'stock': stock,
       if (category != null) 'category': category,

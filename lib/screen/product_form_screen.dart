@@ -14,11 +14,11 @@ class ProductFormScreen extends StatefulWidget {
 class _ProductFormScreenState extends State<ProductFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _priceController = TextEditingController();
   final _stockController = TextEditingController();
   final _categoryController = TextEditingController();
   final ProductService _productService = ProductService();
+
   bool _isLoading = false;
 
   @override
@@ -26,7 +26,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     super.initState();
     if (widget.product != null) {
       _nameController.text = widget.product!.name;
-      _descriptionController.text = widget.product!.description;
       _priceController.text = widget.product!.price.toString();
       _stockController.text = widget.product!.stock.toString();
       _categoryController.text = widget.product!.category ?? '';
@@ -36,7 +35,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _descriptionController.dispose();
     _priceController.dispose();
     _stockController.dispose();
     _categoryController.dispose();
@@ -44,55 +42,45 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   }
 
   Future<void> _saveProduct() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final product = ProductModel(
-          id: widget.product?.id,
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          price: int.parse(_priceController.text),
-          stock: int.parse(_stockController.text),
-          category: _categoryController.text.trim().isEmpty
-              ? null
-              : _categoryController.text.trim(),
-        );
+    setState(() => _isLoading = true);
 
-        bool success;
-        if (widget.product != null) {
-          success = await _productService.updateProduct(widget.product!.id!, product);
-        } else {
-          success = await _productService.createProduct(product);
-        }
+    try {
+      final product = ProductModel(
+        id: widget.product?.id,
+        name: _nameController.text.trim(),
+        price: int.parse(_priceController.text),
+        stock: int.parse(_stockController.text),
+        category: _categoryController.text.trim().isEmpty
+            ? null
+            : _categoryController.text.trim(),
+      );
 
-        if (success && mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.product != null
-                    ? 'Produk berhasil diupdate'
-                    : 'Produk berhasil ditambahkan',
-              ),
+      final success = widget.product != null
+          ? await _productService.updateProduct(product)
+          : await _productService.createProduct(product);
+
+      if (success && mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.product != null
+                  ? 'Produk berhasil diupdate'
+                  : 'Produk berhasil ditambahkan',
             ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+          ),
+        );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -103,7 +91,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         title: Text(widget.product != null ? 'Edit Produk' : 'Tambah Produk'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
@@ -115,27 +103,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   labelText: 'Nama Produk',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nama produk tidak boleh kosong';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Deskripsi',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Deskripsi tidak boleh kosong';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                    value == null || value.isEmpty
+                        ? 'Nama produk tidak boleh kosong'
+                        : null,
               ),
               const SizedBox(height: 16),
               TextFormField(

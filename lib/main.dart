@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'providers/auth_provider.dart';
 import 'screen/login_screen.dart';
 import 'screen/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔥 WAJIB SEKALI UNTUK HAPUS DATA RUSAK
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.clear();
+
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

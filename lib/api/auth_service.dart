@@ -61,52 +61,51 @@ class AuthService {
     }
   }
 
-  // ================= LOGIN =================
-  Future<Map<String, dynamic>> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
+ // ================= LOGIN =================
+Future<Map<String, dynamic>> login({
+  required String email,
+  required String password,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+      }),
+    );
 
-      if (!_isJsonValid(response.body)) {
-        return {
-          'success': false,
-          'message': 'Response server bukan JSON. Periksa backend.'
-        };
-      }
+    print('LOGIN STATUS: ${response.statusCode}');
+    print('LOGIN BODY: ${response.body}');
 
-      final body = jsonDecode(response.body);
-
-      final userJson =
-          body['user'] ??
-          body['data'] ??
-          (body is List && body.isNotEmpty ? body.first : null) ??
-          body;
-
-      final token =
-          body['token'] ??
-          body['access_token'] ??
-          body['jwt'] ??
-          '';
-
-      return {
-        'success': response.statusCode == 200 || response.statusCode == 201,
-        'data': UserData.fromJson(userJson),
-        'token': token,
-      };
-    } catch (e) {
+    if (!_isJsonValid(response.body)) {
       return {
         'success': false,
-        'message': 'Error login: $e',
+        'message': 'Response server bukan JSON'
       };
     }
+
+    final body = jsonDecode(response.body);
+
+    // 🔑 INI YANG BENAR
+    if (body['success'] == true) {
+      return {
+        'success': true,
+        'data': UserData.fromJson(body['data']),
+        'token': body['token'],
+      };
+    }
+
+    return {
+      'success': false,
+      'message': body['message'] ?? 'Login gagal'
+    };
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Error login: $e',
+    };
   }
+}
 }

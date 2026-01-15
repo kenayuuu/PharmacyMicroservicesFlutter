@@ -15,13 +15,6 @@ class UserModel {
           .toList(),
     );
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      "success": success,
-      "data": data.map((e) => e.toJson()).toList(),
-    };
-  }
 }
 
 class UserData {
@@ -50,21 +43,20 @@ class UserData {
       role: json['role'] ?? '',
       email: json['email'],
       phone: json['phone'],
-      shift: json['shift'],
+      shift: json['shift'], // ← boleh null
       password: json['password'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    final map = {
-      if (id != null) "id": id,
-      "name": name,
-      "role": role,
-      if (email != null) "email": email,
-      if (phone != null) "phone": phone,
-      if (shift != null) "shift": shift,
-      if (password != null) "password": password,
+    return {
+      if (id != null) 'id': id,
+      'name': name,
+      'role': role,
+      if (email != null && email!.isNotEmpty) 'email': email,
+      if (phone != null && phone!.isNotEmpty) 'phone': phone,
+      if (shift != null) 'shift': shift,
+      if (password != null && password!.isNotEmpty) 'password': password,
     };
-    return map;
   }
 }
