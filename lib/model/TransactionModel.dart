@@ -15,13 +15,13 @@ class TransactionModel {
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
     return TransactionModel(
-      trx: json['trx'],
-      items: (json['items'] as List)
+      trx: json['trx'] ?? '',
+      items: (json['items'] as List? ?? [])
           .map((e) => TransactionItem.fromJson(e))
           .toList(),
-      paymentMethod: json['payment_method'],
+      paymentMethod: json['payment_method'] ?? '-',
       note: json['note'],
-      createdAt: json['created_at'],
+      createdAt: json['created_at'] ?? '',
     );
   }
 
@@ -40,26 +40,34 @@ class TransactionItem {
   final String productName;
   final int qty;
   final int price;
+  final int subtotal;
 
   TransactionItem({
     required this.productName,
     required this.qty,
     required this.price,
+    required this.subtotal,
   });
 
   factory TransactionItem.fromJson(Map<String, dynamic> json) {
+    final int parsedQty = int.tryParse(json['qty'].toString()) ?? 0;
+    final int parsedPrice = int.tryParse(json['price'].toString()) ?? 0;
+
     return TransactionItem(
-      productName: json['product_name'],
-      qty: json['qty'],
-      price: json['price'],
+      productName: json['name'] ?? '-',
+      qty: parsedQty,
+      price: parsedPrice,
+      subtotal: json['subtotal'] ??
+          (parsedQty * parsedPrice),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'product_name': productName,
+      'name': productName,
       'qty': qty,
       'price': price,
+      'subtotal': subtotal,
     };
   }
 }

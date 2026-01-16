@@ -1,4 +1,3 @@
-// transaction_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../model/TransactionModel.dart';
@@ -7,105 +6,126 @@ import '../config/api_config.dart';
 class TransactionService {
   static const String baseUrl = ApiConfig.transactionServiceUrl;
 
-  // ========== GET ALL TRANSACTIONS ==========
+  // ================= GET ALL TRANSACTIONS =================
   Future<List<TransactionModel>> getTransactions() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/transactions'));
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          final List<dynamic> data = body['data'];
-          return data.map((json) => TransactionModel.fromJson(json)).toList();
-        } else {
-          return [];
-        }
-      } else {
-        throw Exception('Failed to fetch transactions: ${response.statusCode}');
+      final response =
+          await http.get(Uri.parse('$baseUrl/transactions'));
+
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
       }
+
+      final body = jsonDecode(response.body);
+
+      if (body['success'] != true) {
+        return [];
+      }
+
+      final List list = body['data'] ?? [];
+
+      return list
+          .map((e) => TransactionModel.fromJson(e))
+          .toList();
     } catch (e) {
       throw Exception('Error fetching transactions: $e');
     }
   }
 
-  // ========== GET REPORT TRANSACTIONS ==========
+  // ================= GET REPORT TRANSACTIONS =================
   Future<Map<String, dynamic>> getTransactionReports() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/reports/transactions'));
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          // Ambil data transactions dan summary
-          List<TransactionModel> transactions = (body['data'] as List)
-              .map((json) => TransactionModel.fromJson(json))
-              .toList();
-          Map<String, dynamic> summary = body['summary'] ?? {};
-          return {
-            'transactions': transactions,
-            'summary': summary,
-          };
-        } else {
-          return {
-            'transactions': [],
-            'summary': {'total_transaksi': 0, 'total_pendapatan': 0},
-          };
-        }
-      } else {
-        throw Exception('Failed to fetch report: ${response.statusCode}');
+      final response =
+          await http.get(Uri.parse('$baseUrl/reports/transactions'));
+
+      if (response.statusCode != 200) {
+        throw Exception('HTTP ${response.statusCode}');
       }
+
+      final body = jsonDecode(response.body);
+
+      if (body['success'] != true) {
+        return {
+          'transactions': <TransactionModel>[],
+          'summary': {
+            'total_transaksi': 0,
+            'total_pendapatan': 0,
+          }
+        };
+      }
+
+      final List list = body['data'] ?? [];
+
+      return {
+        'transactions':
+            list.map((e) => TransactionModel.fromJson(e)).toList(),
+        'summary': body['summary'] ?? {
+          'total_transaksi': 0,
+          'total_pendapatan': 0,
+        },
+      };
     } catch (e) {
       throw Exception('Error fetching report: $e');
     }
   }
 
-  // ========== CREATE TRANSACTION ==========
+  // ================= CREATE TRANSACTION =================
   Future<bool> createTransaction(TransactionModel transaction) async {
     try {
+      final payload = {
+        'trx': transaction.trx,
+        'items': transaction.items.map((e) => e.toJson()).toList(),
+        'payment_method': transaction.paymentMethod,
+        'note': transaction.note ?? '',
+      };
+
       final response = await http.post(
         Uri.parse('$baseUrl/transactions'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(transaction.toJson()),
+        body: jsonEncode(payload),
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
-      } else {
-        print('Failed to create transaction: ${response.statusCode} - ${response.body}');
-        return false;
-      }
+      return response.statusCode == 200 ||
+          response.statusCode == 201;
     } catch (e) {
-      print('Error creating transaction: $e');
+      print('Create transaction error: $e');
       return false;
     }
   }
 
-  // ========== UPDATE TRANSACTION ==========
-  Future<bool> updateTransaction(String trx, TransactionModel transaction) async {
+  // ================= UPDATE TRANSACTION =================
+  Future<bool> updateTransaction(
+      String trx, TransactionModel transaction) async {
     try {
+      final payload = {
+        'items': transaction.items.map((e) => e.toJson()).toList(),
+        'payment_method': transaction.paymentMethod,
+        'note': transaction.note ?? '',
+      };
+
       final response = await http.put(
         Uri.parse('$baseUrl/transactions/$trx'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'items': transaction.items.map((e) => e.toJson()).toList(),
-          'payment_method': transaction.paymentMethod,
-          'note': transaction.note ?? '',
-        }),
+        body: jsonEncode(payload),
       );
 
       return response.statusCode == 200;
     } catch (e) {
-      print('Error updating transaction: $e');
+      print('Update transaction error: $e');
       return false;
     }
   }
 
-
-  // ========== DELETE TRANSACTION ==========
+  // ================= DELETE TRANSACTION =================
   Future<bool> deleteTransaction(String trx) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/transactions/$trx'));
-      return response.statusCode == 200 || response.statusCode == 204;
+      final response =
+          await http.delete(Uri.parse('$baseUrl/transactions/$trx'));
+
+      return response.statusCode == 200 ||
+          response.statusCode == 204;
     } catch (e) {
-      print('Error deleting transaction: $e');
+      print('Delete transaction error: $e');
       return false;
     }
   }

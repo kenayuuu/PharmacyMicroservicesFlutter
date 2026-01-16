@@ -3,21 +3,25 @@ import '../model/TransactionModel.dart';
 import '../model/ProductModel.dart';
 import '../api/transaction_service.dart';
 import '../api/product_service.dart';
+import '../utils/currency_formatter.dart';
 
 class TransactionFormScreen extends StatefulWidget {
   final TransactionModel? transaction;
   const TransactionFormScreen({super.key, this.transaction});
 
   @override
-  State<TransactionFormScreen> createState() => _TransactionFormScreenState();
+  State<TransactionFormScreen> createState() =>
+      _TransactionFormScreenState();
 }
 
-class _TransactionFormScreenState extends State<TransactionFormScreen> {
+class _TransactionFormScreenState
+    extends State<TransactionFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _trxController = TextEditingController();
   final _noteController = TextEditingController();
 
-  final TransactionService _transactionService = TransactionService();
+  final TransactionService _transactionService =
+      TransactionService();
   final ProductService _productService = ProductService();
 
   List<ProductModel> _products = [];
@@ -38,17 +42,17 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       _noteController.text = trx.note ?? '';
       _selectedPaymentMethod = trx.paymentMethod;
 
-      // Copy aman list item (hindari referensi lama)
       _items = trx.items
           .map((e) => TransactionItem(
-        productName: e.productName,
-        qty: e.qty,
-        price: e.price,
-      ))
+                productName: e.productName,
+                qty: e.qty,
+                price: e.price,
+                subtotal: e.subtotal,
+              ))
           .toList();
     } else {
-      // TRX otomatis
-      _trxController.text = 'TRX${DateTime.now().millisecondsSinceEpoch}';
+      _trxController.text =
+          'TRX${DateTime.now().millisecondsSinceEpoch}';
     }
   }
 
@@ -69,8 +73,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     } catch (e) {
       setState(() => _loadingProducts = false);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error loading products: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading products: $e')),
+        );
       }
     }
   }
@@ -91,6 +96,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     setState(() => _items.removeAt(index));
   }
 
+  int _calculateTotal() =>
+      _items.fold(0, (sum, i) => sum + i.subtotal);
+
   Future<void> _saveTransaction() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -110,18 +118,16 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       note: _noteController.text.trim().isEmpty
           ? null
           : _noteController.text.trim(),
-      createdAt: widget.transaction?.createdAt ?? DateTime.now().toIso8601String(),
+      createdAt: widget.transaction?.createdAt ??
+          DateTime.now().toIso8601String(),
     );
 
-    bool success;
-    if (widget.transaction != null) {
-      success = await _transactionService.updateTransaction(
-        widget.transaction!.trx,
-        transaction,
-      );
-    } else {
-      success = await _transactionService.createTransaction(transaction);
-    }
+    final success = widget.transaction != null
+        ? await _transactionService.updateTransaction(
+            widget.transaction!.trx,
+            transaction,
+          )
+        : await _transactionService.createTransaction(transaction);
 
     setState(() => _isLoading = false);
 
@@ -135,8 +141,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               : 'Transaksi berhasil dibuat'),
         ),
       );
-      // Kembali ke list dan refresh otomatis
-      Navigator.of(context).pop(true); // ❗ kembalikan true untuk menandai ada perubahan
+      Navigator.of(context).pop(true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal menyimpan transaksi')),
@@ -146,114 +151,142 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final total = _calculateTotal();
+
     return Scaffold(
       appBar: AppBar(
-        title:
-        Text(widget.transaction != null ? 'Edit Transaksi' : 'Tambah Transaksi'),
+        title: Text(widget.transaction != null
+            ? 'Edit Transaksi'
+            : 'Tambah Transaksi'),
       ),
       body: _loadingProducts
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextFormField(
-                controller: _trxController,
-                decoration: const InputDecoration(
-                  labelText: 'Transaction ID',
-                  border: OutlineInputBorder(),
-                ),
-                enabled: widget.transaction == null,
-                validator: (v) =>
-                v == null || v.isEmpty ? 'TRX tidak boleh kosong' : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedPaymentMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Payment Method',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                  DropdownMenuItem(value: 'card', child: Text('Card')),
-                  DropdownMenuItem(value: 'transfer', child: Text('Transfer')),
-                ],
-                onChanged: (v) => setState(() => _selectedPaymentMethod = v!),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Note (opsional)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Items (${_items.length})',
-                      style: Theme.of(context).textTheme.titleMedium),
-                  ElevatedButton.icon(
-                    onPressed: _addItem,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Tambah Item'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              ..._items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    title: Text(item.productName),
-                    subtitle: Text(
-                        'Qty: ${item.qty} x Rp ${item.price} = Rp ${item.qty * item.price}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => _removeItem(index),
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: _trxController,
+                      decoration: const InputDecoration(
+                        labelText: 'Transaction ID',
+                        border: OutlineInputBorder(),
+                      ),
+                      enabled: widget.transaction == null,
+                      validator: (v) =>
+                          v == null || v.isEmpty
+                              ? 'TRX tidak boleh kosong'
+                              : null,
                     ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _saveTransaction,
-                style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16)),
-                child: _isLoading
-                    ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                    : Text(widget.transaction != null ? 'Update' : 'Simpan'),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedPaymentMethod,
+                      decoration: const InputDecoration(
+                        labelText: 'Payment Method',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                            value: 'cash', child: Text('Cash')),
+                        DropdownMenuItem(
+                            value: 'card', child: Text('Card')),
+                        DropdownMenuItem(
+                            value: 'transfer',
+                            child: Text('Transfer')),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _selectedPaymentMethod = v!),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _noteController,
+                      decoration: const InputDecoration(
+                        labelText: 'Note (opsional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 24),
+
+                    /// ITEMS
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Items (${_items.length})',
+                          style:
+                              Theme.of(context).textTheme.titleMedium,
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: _addItem,
+                          icon: const Icon(Icons.add),
+                          label: const Text('Tambah Item'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ..._items.asMap().entries.map((e) {
+                      final item = e.value;
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          title: Text(item.productName),
+                          subtitle: Text(
+                            '${item.qty} x '
+                            '${CurrencyFormatter.rupiah(item.price)}'
+                            ' = ${CurrencyFormatter.rupiah(item.subtotal)}',
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () => _removeItem(e.key),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    const Divider(),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        'TOTAL: ${CurrencyFormatter.rupiah(total)}',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _saveTransaction,
+                      child: _isLoading
+                          ? const CircularProgressIndicator()
+                          : const Text('Simpan'),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }
 
-/* ===================== ADD ITEM DIALOG ===================== */
+/* ================= ADD ITEM DIALOG ================= */
 
 class _AddItemDialog extends StatefulWidget {
   final List<ProductModel> products;
   final Function(TransactionItem) onAdd;
 
-  const _AddItemDialog({required this.products, required this.onAdd});
+  const _AddItemDialog({
+    required this.products,
+    required this.onAdd,
+  });
 
   @override
-  State<_AddItemDialog> createState() => _AddItemDialogState();
+  State<_AddItemDialog> createState() =>
+      _AddItemDialogState();
 }
 
 class _AddItemDialogState extends State<_AddItemDialog> {
@@ -270,23 +303,18 @@ class _AddItemDialogState extends State<_AddItemDialog> {
     if (_selectedProduct == null) return;
 
     final qty = int.tryParse(_qtyController.text) ?? 0;
-    if (qty <= 0) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Qty harus > 0')));
-      return;
-    }
+    if (qty <= 0) return;
 
-    if (qty > _selectedProduct!.stock) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Stock tidak cukup. Tersedia: ${_selectedProduct!.stock}')));
-      return;
-    }
+    final price = _selectedProduct!.price;
 
-    widget.onAdd(TransactionItem(
-      productName: _selectedProduct!.name,
-      qty: qty,
-      price: _selectedProduct!.price,
-    ));
+    widget.onAdd(
+      TransactionItem(
+        productName: _selectedProduct!.name,
+        qty: qty,
+        price: price,
+        subtotal: qty * price,
+      ),
+    );
 
     Navigator.of(context).pop();
   }
@@ -299,14 +327,18 @@ class _AddItemDialogState extends State<_AddItemDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<ProductModel>(
-            value: _selectedProduct,
             decoration: const InputDecoration(
               labelText: 'Produk',
               border: OutlineInputBorder(),
             ),
             items: widget.products
-                .map((p) =>
-                DropdownMenuItem(value: p, child: Text('${p.name} - Stock: ${p.stock}')))
+                .map(
+                  (p) => DropdownMenuItem(
+                    value: p,
+                    child:
+                        Text('${p.name} (Stock: ${p.stock})'),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => setState(() => _selectedProduct = v),
           ),
@@ -322,8 +354,14 @@ class _AddItemDialogState extends State<_AddItemDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Batal')),
-        ElevatedButton(onPressed: _addItem, child: const Text('Tambah')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Batal'),
+        ),
+        ElevatedButton(
+          onPressed: _addItem,
+          child: const Text('Tambah'),
+        ),
       ],
     );
   }

@@ -6,41 +6,31 @@ import '../config/api_config.dart';
 class ReviewService {
   static const String baseUrl = ApiConfig.reviewServiceUrl;
 
-  // ================= GET ALL REVIEWS =================
+  // GET ALL
   Future<List<ReviewModel>> getReviews() async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/reviews'));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body);
-        final List<dynamic> data = json['data'] ?? [];
-        return data.map((e) => ReviewModel.fromJson(e)).toList();
-      } else {
-        throw Exception('Gagal mengambil review, status: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error fetching reviews: $e');
+    final response = await http.get(Uri.parse('$baseUrl/reviews'));
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      final data = jsonData['data'] as List? ?? [];
+      return data.map((e) => ReviewModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal load reviews');
     }
   }
 
-  // ================= GET REVIEWS BY PRODUCT =================
+  // GET BY PRODUCT
   Future<List<ReviewModel>> getReviewsByProduct(int productId) async {
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/reviews/product/$productId'));
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> json = jsonDecode(response.body);
-        final List<dynamic> data = json['data'] ?? [];
-        return data.map((e) => ReviewModel.fromJson(e)).toList();
-      } else {
-        throw Exception('Gagal mengambil review per produk, status: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Error fetching product reviews: $e');
+    final response = await http.get(Uri.parse('$baseUrl/reviews/product/$productId'));
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      final data = jsonData['data'] as List? ?? [];
+      return data.map((e) => ReviewModel.fromJson(e)).toList();
+    } else {
+      throw Exception('Gagal load product reviews');
     }
   }
 
-  // ================= ADD REVIEW =================
+  // ADD REVIEW
   Future<bool> addReview({
     required int productId,
     required int userId,
@@ -54,50 +44,39 @@ class ReviewService {
       "rating": rating,
     });
 
-    try {
-      print('📤 POST $baseUrl/reviews');
-      print('📦 Body: $body');
+    final response = await http.post(
+      Uri.parse('$baseUrl/reviews'),
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/reviews'),
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: body,
-      );
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
 
-      print('📥 Response status: ${response.statusCode}');
-      print('📥 Response body: ${response.body}');
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
-      } else {
-        // Cetak error dari backend
-        final Map<String, dynamic> json = jsonDecode(response.body);
-        final message = json['message'] ?? response.body;
-        print('❌ Backend error: $message');
-        return false;
-      }
-    } catch (e) {
-      print('❌ Error adding review: $e');
-      throw Exception('Error adding review: $e');
+  // DELETE REVIEW
+  Future<bool> deleteReview(ReviewModel review) async {
+    if (review.id != null) {
+      // pakai MongoDB _id
+      final response = await http.delete(Uri.parse('$baseUrl/reviews/${review.id}'));
+      return response.statusCode == 200 || response.statusCode == 204;
+    } else {
+      // fallback: id null → tidak bisa delete
+      print('⚠️ Review id null, tidak bisa delete di backend');
+      return false;
     }
   }
 
+  // UPDATE REVIEW
+  Future<bool> updateReview(ReviewModel review, String newText, int newRating) async {
+    if (review.id == null) return false;
 
-  // ================= DELETE REVIEW =================
-  Future<bool> deleteReview(String reviewId) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/reviews/$reviewId'),
-      );
+    final body = jsonEncode({"review": newText, "rating": newRating});
+    final response = await http.put(
+      Uri.parse('$baseUrl/reviews/${review.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: body,
+    );
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else {
-        print('Delete review failed: ${response.body}');
-        return false;
-      }
-    } catch (e) {
-      throw Exception('Error deleting review: $e');
-    }
+    return response.statusCode == 200;
   }
 }

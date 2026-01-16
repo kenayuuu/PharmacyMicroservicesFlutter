@@ -4,7 +4,6 @@ import '../api/user_service.dart';
 
 class UserFormScreen extends StatefulWidget {
   final UserData? user;
-
   const UserFormScreen({super.key, this.user});
 
   @override
@@ -20,6 +19,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
   String? _selectedShift;
   final UserService _userService = UserService();
   bool _isLoading = false;
+  final _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -38,59 +38,56 @@ class _UserFormScreenState extends State<UserFormScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _saveUser() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        final user = UserData(
-          id: widget.user?.id ?? 0, // id bisa 0 atau null sesuai API
-          name: _nameController.text.trim(),
-          role: _selectedRole ?? 'apoteker',
-          email: _emailController.text.trim(),
-          phone: _phoneController.text.trim(),
-          shift: _selectedShift ?? '',
-          password: '', // kosong saat update jika password tidak diubah
-        );
+    setState(() => _isLoading = true);
 
+    final user = UserData(
+      id: widget.user?.id,
+      name: _nameController.text.trim(),
+      role: _selectedRole ?? 'apoteker',
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      shift: _selectedShift,
+      password: _passwordController.text.isNotEmpty
+          ? _passwordController.text.trim()
+          : null,
+    );
 
-        bool success;
-        if (widget.user != null) {
-          success = await _userService.updateUser(widget.user!.id!, user);
-        } else {
-          success = await _userService.createUser(user);
-        }
+    bool success = false;
 
-        if (success && mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                widget.user != null
-                    ? 'User berhasil diupdate'
-                    : 'User berhasil ditambahkan',
-              ),
-            ),
-          );
+    try {
+      if (widget.user != null) {
+        success = await _userService.updateUser(widget.user!.id!, user);
+      } else {
+        if (user.password == null || user.password!.isEmpty) {
+          throw Exception('Password wajib diisi saat membuat user');
         }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        success = await _userService.createUser(user);
       }
+
+      if (success && mounted) {
+        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.user != null
+                ? 'User berhasil diupdate'
+                : 'User berhasil ditambahkan'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -101,7 +98,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
         title: Text(widget.user != null ? 'Edit User' : 'Tambah User'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
@@ -110,89 +107,66 @@ class _UserFormScreenState extends State<UserFormScreen> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'Nama',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nama tidak boleh kosong';
-                  }
-                  return null;
-                },
+                    labelText: 'Nama', border: OutlineInputBorder()),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Nama wajib diisi' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
-                  labelText: 'Email (opsional)',
-                  border: OutlineInputBorder(),
-                ),
+                    labelText: 'Email', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
-                keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                  labelText: 'Nomor Telepon (opsional)',
-                  border: OutlineInputBorder(),
-                ),
+                    labelText: 'Phone', border: OutlineInputBorder()),
               ),
+              const SizedBox(height: 16),
+              if (widget.user == null)
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                      labelText: 'Password', border: OutlineInputBorder()),
+                  validator: (v) =>
+                      v == null || v.isEmpty ? 'Password wajib diisi' : null,
+                ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedRole,
                 decoration: const InputDecoration(
-                  labelText: 'Role',
-                  border: OutlineInputBorder(),
-                ),
+                    labelText: 'Role', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: 'owner', child: Text('Owner')),
                   DropdownMenuItem(value: 'apoteker', child: Text('Apoteker')),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRole = value;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Role harus dipilih';
-                  }
-                  return null;
-                },
+                onChanged: (v) => setState(() => _selectedRole = v),
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Role wajib dipilih' : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedShift,
                 decoration: const InputDecoration(
-                  labelText: 'Shift (opsional)',
-                  border: OutlineInputBorder(),
-                ),
+                    labelText: 'Shift', border: OutlineInputBorder()),
                 items: const [
                   DropdownMenuItem(value: null, child: Text('Tidak ada')),
                   DropdownMenuItem(value: 'pagi', child: Text('Pagi')),
                   DropdownMenuItem(value: 'malam', child: Text('Malam')),
                 ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedShift = value;
-                  });
-                },
+                onChanged: (v) => setState(() => _selectedShift = v),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveUser,
                 style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
+                    padding: const EdgeInsets.symmetric(vertical: 16)),
                 child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const CircularProgressIndicator()
                     : Text(widget.user != null ? 'Update' : 'Simpan'),
-              ),
+              )
             ],
           ),
         ),

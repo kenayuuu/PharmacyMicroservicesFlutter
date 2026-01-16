@@ -2,10 +2,7 @@ class UserModel {
   final bool success;
   final List<UserData> data;
 
-  UserModel({
-    required this.success,
-    required this.data,
-  });
+  UserModel({required this.success, required this.data});
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
@@ -43,20 +40,25 @@ class UserData {
       role: json['role'] ?? '',
       email: json['email'],
       phone: json['phone'],
-      shift: json['shift'], // ← boleh null
-      password: json['password'],
+      shift: json['shift'],
+      password: null, // password tidak dikirim dari server
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      if (id != null) 'id': id,
+  Map<String, dynamic> toJson({bool forUpdate = false}) {
+    final map = {
       'name': name,
       'role': role,
       if (email != null && email!.isNotEmpty) 'email': email,
       if (phone != null && phone!.isNotEmpty) 'phone': phone,
-      if (shift != null) 'shift': shift,
-      if (password != null && password!.isNotEmpty) 'password': password,
+      if (shift != null && shift!.isNotEmpty) 'shift': shift,
     };
+
+    // kirim password hanya untuk create atau jika diupdate
+    if (!forUpdate && password != null && password!.isNotEmpty) {
+      map['password'] = password;
+    }
+
+    return map;
   }
 }

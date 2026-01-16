@@ -3,12 +3,11 @@ import 'package:provider/provider.dart';
 import '../api/review_service.dart';
 import '../api/product_service.dart';
 import '../model/ProductModel.dart';
+import '../model/UserModel.dart';
 import '../providers/auth_provider.dart';
 
 class AddReviewScreen extends StatefulWidget {
-  final int? productId; // opsional kalau sudah dari detail produk
-
-  const AddReviewScreen({super.key, this.productId});
+  const AddReviewScreen({super.key});
 
   @override
   State<AddReviewScreen> createState() => _AddReviewScreenState();
@@ -19,8 +18,9 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   final _reviewController = TextEditingController();
   int _rating = 5;
   bool _loading = false;
-  int? _selectedProductId;
+
   List<ProductModel> _products = [];
+  int? _selectedProductId;
   bool _loadingProducts = true;
 
   @override
@@ -39,14 +39,10 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
     try {
       final products = await ProductService().getProducts();
       setState(() {
-        _products = products.where((p) => p.id != null).toList(); // hanya produk valid
+        _products = products.where((p) => p.id != null).toList();
         _loadingProducts = false;
 
-        // atur default value aman
-        if (widget.productId != null &&
-            _products.any((p) => p.id == widget.productId)) {
-          _selectedProductId = widget.productId;
-        } else if (_products.isNotEmpty) {
+        if (_products.isNotEmpty) {
           _selectedProductId = _products.first.id;
         }
       });
@@ -61,19 +57,19 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_selectedProductId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih produk terlebih dahulu')),
+      );
+      return;
+    }
+
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final user = auth.user;
 
     if (user == null || user.id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User belum login atau ID tidak tersedia')),
-      );
-      return;
-    }
-
-    if (_selectedProductId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih produk terlebih dahulu')),
+        const SnackBar(content: Text('User belum login')),
       );
       return;
     }
@@ -83,8 +79,8 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
     final success = await ReviewService().addReview(
       productId: _selectedProductId!,
       userId: user.id!,
-      rating: _rating,
       review: _reviewController.text,
+      rating: _rating,
     );
 
     setState(() => _loading = false);
@@ -94,7 +90,7 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
         const SnackBar(content: Text('Review berhasil ditambahkan')),
       );
       Navigator.pop(context, true);
-    } else if (mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Gagal menambahkan review')),
       );
@@ -108,77 +104,79 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
       body: _loadingProducts
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Dropdown produk
-              DropdownButtonFormField<int>(
-                value: _selectedProductId,
-                items: _products
-                    .map(
-                      (p) => DropdownMenuItem(
-                    value: p.id!,
-                    child: Text(p.name),
-                  ),
-                )
-                    .toList(),
-                onChanged: (v) => setState(() => _selectedProductId = v),
-                decoration: const InputDecoration(labelText: 'Produk'),
-                validator: (v) => v == null ? 'Pilih produk' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Dropdown rating
-              DropdownButtonFormField<int>(
-                value: _rating,
-                items: List.generate(
-                  5,
-                      (i) => DropdownMenuItem(
-                    value: i + 1,
-                    child: Text('${i + 1} ★'),
-                  ),
-                ),
-                onChanged: (v) => setState(() => _rating = v ?? 5),
-                decoration: const InputDecoration(labelText: 'Rating'),
-              ),
-              const SizedBox(height: 16),
-
-              // Text review
-              TextFormField(
-                controller: _reviewController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Review',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                v == null || v.isEmpty ? 'Review wajib diisi' : null,
-              ),
-              const SizedBox(height: 24),
-
-              // Tombol kirim
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _submit,
-                  child: _loading
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    // Dropdown Produk
+                    DropdownButtonFormField<int>(
+                      value: _selectedProductId,
+                      items: _products
+                          .map(
+                            (p) => DropdownMenuItem(
+                              value: p.id!,
+                              child: Text(p.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedProductId = v),
+                      decoration: const InputDecoration(labelText: 'Produk'),
+                      validator: (v) =>
+                          v == null ? 'Pilih produk terlebih dahulu' : null,
                     ),
-                  )
-                      : const Text('Kirim Review'),
+                    const SizedBox(height: 16),
+
+                    // Dropdown Rating
+                    DropdownButtonFormField<int>(
+                      value: _rating,
+                      items: List.generate(
+                        5,
+                        (i) => DropdownMenuItem(
+                          value: i + 1,
+                          child: Text('${i + 1} ★'),
+                        ),
+                      ),
+                      onChanged: (v) => setState(() => _rating = v ?? 5),
+                      decoration: const InputDecoration(labelText: 'Rating'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Text Review
+                    TextFormField(
+                      controller: _reviewController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Review',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => v == null || v.isEmpty
+                          ? 'Review wajib diisi'
+                          : null,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Tombol Submit
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _loading ? null : _submit,
+                        child: _loading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Kirim Review'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 }

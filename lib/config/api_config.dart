@@ -1,5 +1,5 @@
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.18.65';
+  static const String baseUrl = 'http://192.168.1.36';
 
   static const String userServiceUrl = '$baseUrl:4000';
   static const String productServiceUrl = '$baseUrl:8001';

@@ -24,20 +24,15 @@ class _UserListScreenState extends State<UserListScreen> {
   }
 
   Future<void> _loadUsers() async {
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isLoading = true);
     try {
-      final usersResponse = await _userService.getUsers();
+      final users = await _userService.getUsers();
       setState(() {
-        _users = usersResponse.data;
+        _users = users;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
@@ -48,9 +43,9 @@ class _UserListScreenState extends State<UserListScreen> {
 
   Future<void> _deleteUser(int id) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    // tidak bisa hapus diri sendiri
     final currentUser = authProvider.user;
+
+    // Tidak bisa hapus diri sendiri
     if (currentUser != null && currentUser.id == id) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Anda tidak dapat menghapus akun sendiri')),
@@ -106,75 +101,73 @@ class _UserListScreenState extends State<UserListScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _users.isEmpty
-          ? const Center(child: Text('Tidak ada users'))
-          : RefreshIndicator(
-        onRefresh: _loadUsers,
-        child: ListView.builder(
-          itemCount: _users.length,
-          itemBuilder: (context, index) {
-            final user = _users[index];
+              ? const Center(child: Text('Tidak ada users'))
+              : RefreshIndicator(
+                  onRefresh: _loadUsers,
+                  child: ListView.builder(
+                    itemCount: _users.length,
+                    itemBuilder: (context, index) {
+                      final user = _users[index];
 
-            // pastikan semua field nullable aman
-            final name = user.name ?? '';
-            final email = user.email ?? '';
-            final phone = user.phone ?? '';
-            final shift = user.shift ?? '';
-            final id = user.id; // pastikan UserData.id tidak nullable
+                      final name = user.name;
+                      final email = user.email ?? '';
+                      final phone = user.phone ?? '';
+                      final shift = user.shift ?? '';
+                      final id = user.id;
 
-            return Card(
-              margin: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 8),
-              child: ListTile(
-                leading: CircleAvatar(
-                  child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?'),
-                ),
-                title: Text(name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Role: ${user.role ?? ''}'),
-                    if (email.isNotEmpty) Text('Email: $email'),
-                    if (phone.isNotEmpty) Text('Phone: $phone'),
-                    if (shift.isNotEmpty) Text('Shift: $shift'),
-                  ],
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                UserFormScreen(user: user),
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                            ),
                           ),
-                        );
-                        _loadUsers();
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        if (id != null) _deleteUser(id);
-                      },
-                    ),
-                  ],
+                          title: Text(name),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Role: ${user.role}'),
+                              if (email.isNotEmpty) Text('Email: $email'),
+                              if (phone.isNotEmpty) Text('Phone: $phone'),
+                              if (shift.isNotEmpty) Text('Shift: $shift'),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: () async {
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          UserFormScreen(user: user),
+                                    ),
+                                  );
+                                  _loadUsers();
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                onPressed: () {
+                                  if (id != null) _deleteUser(id);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            );
-          },
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const UserFormScreen(),
-            ),
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const UserFormScreen()),
           );
-          _loadUsers();
+          if (result == true) _loadUsers();
         },
         child: const Icon(Icons.add),
       ),
