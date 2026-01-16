@@ -7,7 +7,7 @@ import 'product_list_screen.dart';
 import 'user_list_screen.dart';
 import 'transaction_list_screen.dart';
 import 'review_list_screen.dart';
-import 'report_transaction_screen.dart'; // ← Import screen laporan
+import 'report_transaction_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,6 +21,8 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Apotek Pharmacy'),
+        backgroundColor: const Color(0xFF00695C),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -36,39 +38,70 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      child: Icon(Icons.person),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Selamat datang, ${user?.name ?? ""}',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          Text(
-                            'Role: ${user != null ? user.role.toUpperCase() : ""}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
+            /// HEADER USER INFO
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF4DB6AC),
+                    Color(0xFF00695C),
                   ],
                 ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      color: Color(0xFF00695C),
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selamat Datang 👋',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user?.name ?? '',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Role: ${user != null ? user.role.toUpperCase() : ""}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
+
             const SizedBox(height: 24),
+
+            /// MENU GRID
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -77,36 +110,42 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   _buildMenuCard(
                     context,
-                    icon: Icons.medication,
+                    icon: Icons.medication_outlined,
                     title: 'Produk',
+                    color: Colors.green,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const ProductListScreen(),
+                          builder: (context) =>
+                          const ProductListScreen(),
                         ),
                       );
                     },
                   ),
                   _buildMenuCard(
                     context,
-                    icon: Icons.shopping_cart,
+                    icon: Icons.shopping_cart_outlined,
                     title: 'Transaksi',
+                    color: Colors.orange,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const TransactionListScreen(),
+                          builder: (context) =>
+                          const TransactionListScreen(),
                         ),
                       );
                     },
                   ),
                   _buildMenuCard(
                     context,
-                    icon: Icons.reviews,
+                    icon: Icons.reviews_outlined,
                     title: 'Review',
+                    color: Colors.blue,
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => const ReviewListScreen(),
+                          builder: (context) =>
+                          const ReviewListScreen(),
                         ),
                       );
                     },
@@ -114,24 +153,28 @@ class HomeScreen extends StatelessWidget {
                   if (isOwner) ...[
                     _buildMenuCard(
                       context,
-                      icon: Icons.people,
+                      icon: Icons.people_outline,
                       title: 'Users',
+                      color: Colors.purple,
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => const UserListScreen(),
+                            builder: (context) =>
+                            const UserListScreen(),
                           ),
                         );
                       },
                     ),
                     _buildMenuCard(
                       context,
-                      icon: Icons.bar_chart,
+                      icon: Icons.bar_chart_outlined,
                       title: 'Laporan',
+                      color: Colors.red,
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => const ReportTransactionScreen(),
+                            builder: (context) =>
+                            const ReportTransactionScreen(),
                           ),
                         );
                       },
@@ -146,30 +189,49 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// MENU CARD
   Widget _buildMenuCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 4,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ],
+      BuildContext context, {
+        required IconData icon,
+        required String title,
+        required Color color,
+        required VoidCallback onTap,
+      }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 36,
+                  color: color,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                title,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
       ),
     );

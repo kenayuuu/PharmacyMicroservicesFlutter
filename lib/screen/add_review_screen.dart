@@ -87,7 +87,10 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Review berhasil ditambahkan')),
+        const SnackBar(
+          content: Text('Review berhasil ditambahkan'),
+          backgroundColor: Color(0xFF00695C),
+        ),
       );
       Navigator.pop(context, true);
     } else {
@@ -100,83 +103,99 @@ class _AddReviewScreenState extends State<AddReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tambah Review')),
+      appBar: AppBar(
+        title: const Text('Tambah Review'),
+        backgroundColor: const Color(0xFF00695C),
+      ),
       body: _loadingProducts
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    // Dropdown Produk
-                    DropdownButtonFormField<int>(
-                      value: _selectedProductId,
-                      items: _products
-                          .map(
-                            (p) => DropdownMenuItem(
-                              value: p.id!,
-                              child: Text(p.name),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedProductId = v),
-                      decoration: const InputDecoration(labelText: 'Produk'),
-                      validator: (v) =>
-                          v == null ? 'Pilih produk terlebih dahulu' : null,
-                    ),
-                    const SizedBox(height: 16),
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              // Dropdown Produk
+              DropdownButtonFormField<int>(
+                value: _selectedProductId,
+                items: _products
+                    .map(
+                      (p) => DropdownMenuItem(
+                    value: p.id!,
+                    child: Text(p.name),
+                  ),
+                )
+                    .toList(),
+                onChanged: (v) => setState(() => _selectedProductId = v),
+                decoration: const InputDecoration(labelText: 'Produk'),
+                validator: (v) =>
+                v == null ? 'Pilih produk terlebih dahulu' : null,
+              ),
+              const SizedBox(height: 16),
 
-                    // Dropdown Rating
-                    DropdownButtonFormField<int>(
-                      value: _rating,
-                      items: List.generate(
-                        5,
-                        (i) => DropdownMenuItem(
-                          value: i + 1,
-                          child: Text('${i + 1} ★'),
-                        ),
-                      ),
-                      onChanged: (v) => setState(() => _rating = v ?? 5),
-                      decoration: const InputDecoration(labelText: 'Rating'),
-                    ),
-                    const SizedBox(height: 16),
+              // Dropdown Rating
+              DropdownButtonFormField<int>(
+                value: _rating,
+                items: List.generate(
+                  5,
+                      (i) => DropdownMenuItem(
+                    value: i + 1,
+                    child: Text('${i + 1} ★'),
+                  ),
+                ),
+                onChanged: (v) => setState(() => _rating = v ?? 5),
+                decoration: const InputDecoration(labelText: 'Rating'),
+              ),
+              const SizedBox(height: 16),
 
-                    // Text Review
-                    TextFormField(
-                      controller: _reviewController,
-                      maxLines: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'Review',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => v == null || v.isEmpty
-                          ? 'Review wajib diisi'
-                          : null,
-                    ),
-                    const SizedBox(height: 24),
+              // Text Review
+              TextFormField(
+                controller: _reviewController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Review',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (v) =>
+                v == null || v.isEmpty ? 'Review wajib diisi' : null,
+              ),
+              const SizedBox(height: 24),
 
-                    // Tombol Submit
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _submit,
-                        child: _loading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Text('Kirim Review'),
-                      ),
+              // Tombol Submit
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    backgroundColor: const Color(0xFF00695C),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
+                  ),
+                  child: _loading
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : const Text(
+                    'Kirim Review',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

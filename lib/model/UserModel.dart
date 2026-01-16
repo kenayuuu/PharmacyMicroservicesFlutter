@@ -55,7 +55,7 @@ class UserData {
     };
 
     // kirim password hanya untuk create atau jika diupdate
-    if (!forUpdate && password != null && password!.isNotEmpty) {
+    if (password != null && password!.isNotEmpty) {
       map['password'] = password;
     }
 

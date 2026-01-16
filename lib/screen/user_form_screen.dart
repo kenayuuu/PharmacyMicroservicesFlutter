@@ -12,14 +12,17 @@ class UserFormScreen extends StatefulWidget {
 
 class _UserFormScreenState extends State<UserFormScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   String? _selectedRole;
   String? _selectedShift;
+
   final UserService _userService = UserService();
   bool _isLoading = false;
-  final _passwordController = TextEditingController();
 
   @override
   void initState() {
@@ -50,41 +53,38 @@ class _UserFormScreenState extends State<UserFormScreen> {
     final user = UserData(
       id: widget.user?.id,
       name: _nameController.text.trim(),
-      role: _selectedRole ?? 'apoteker',
       email: _emailController.text.trim(),
       phone: _phoneController.text.trim(),
-      shift: _selectedShift,
+      role: _selectedRole ?? 'apoteker',
+      shift: _selectedShift == 'none' ? null : _selectedShift,
       password: _passwordController.text.isNotEmpty
           ? _passwordController.text.trim()
           : null,
     );
 
-    bool success = false;
-
     try {
-      if (widget.user != null) {
-        success = await _userService.updateUser(widget.user!.id!, user);
-      } else {
-        if (user.password == null || user.password!.isEmpty) {
-          throw Exception('Password wajib diisi saat membuat user');
-        }
-        success = await _userService.createUser(user);
-      }
+      final success = widget.user != null
+          ? await _userService.updateUser(widget.user!.id!, user)
+          : await _userService.createUser(user);
 
       if (success && mounted) {
-        Navigator.of(context).pop(true);
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.user != null
-                ? 'User berhasil diupdate'
-                : 'User berhasil ditambahkan'),
+            content: Text(
+              widget.user != null
+                  ? 'User berhasil diupdate'
+                  : 'User berhasil ditambahkan',
+            ),
+            backgroundColor: const Color(0xFF00695C),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -93,80 +93,129 @@ class _UserFormScreenState extends State<UserFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.user != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.user != null ? 'Edit User' : 'Tambah User'),
+        title: Text(isEditing ? 'Edit User' : 'Tambah User'),
+        backgroundColor: const Color(0xFF00695C),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // ================= Nama =================
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                    labelText: 'Nama', border: OutlineInputBorder()),
+                  labelText: 'Nama',
+                  border: OutlineInputBorder(),
+                ),
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Nama wajib diisi' : null,
+                v == null || v.isEmpty ? 'Nama wajib diisi' : null,
               ),
               const SizedBox(height: 16),
+
+              // ================= Email =================
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
-                    labelText: 'Email', border: OutlineInputBorder()),
+                  labelText: 'Email',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
+
+              // ================= Phone =================
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(
-                    labelText: 'Phone', border: OutlineInputBorder()),
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
-              if (widget.user == null)
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                      labelText: 'Password', border: OutlineInputBorder()),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Password wajib diisi' : null,
+
+              // ================= Password =================
+              TextFormField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: isEditing
+                      ? 'Password (kosongkan jika tidak diubah)'
+                      : 'Password',
+                  border: const OutlineInputBorder(),
                 ),
+                validator: (v) {
+                  if (!isEditing && (v == null || v.isEmpty)) {
+                    return 'Password wajib diisi';
+                  }
+                  return null;
+                },
+              ),
               const SizedBox(height: 16),
+
+              // ================= Role =================
               DropdownButtonFormField<String>(
                 value: _selectedRole,
                 decoration: const InputDecoration(
-                    labelText: 'Role', border: OutlineInputBorder()),
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'owner', child: Text('Owner')),
                   DropdownMenuItem(value: 'apoteker', child: Text('Apoteker')),
                 ],
                 onChanged: (v) => setState(() => _selectedRole = v),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Role wajib dipilih' : null,
+                validator: (v) => v == null ? 'Role wajib dipilih' : null,
               ),
               const SizedBox(height: 16),
+
+              // ================= Shift =================
               DropdownButtonFormField<String>(
                 value: _selectedShift,
                 decoration: const InputDecoration(
-                    labelText: 'Shift', border: OutlineInputBorder()),
+                  labelText: 'Shift',
+                  border: OutlineInputBorder(),
+                ),
                 items: const [
-                  DropdownMenuItem(value: null, child: Text('Tidak ada')),
+                  DropdownMenuItem(value: 'none', child: Text('Tidak ada')),
                   DropdownMenuItem(value: 'pagi', child: Text('Pagi')),
                   DropdownMenuItem(value: 'malam', child: Text('Malam')),
                 ],
                 onChanged: (v) => setState(() => _selectedShift = v),
               ),
               const SizedBox(height: 24),
+
+              // ================= BUTTON =================
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveUser,
                 style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: const Color(0xFF00695C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : Text(widget.user != null ? 'Update' : 'Simpan'),
-              )
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : Text(
+                  isEditing ? 'Update User' : 'Simpan User',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

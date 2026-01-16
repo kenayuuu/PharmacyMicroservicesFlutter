@@ -70,6 +70,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   ? 'Produk berhasil diupdate'
                   : 'Produk berhasil ditambahkan',
             ),
+            backgroundColor: const Color(0xFF00695C),
           ),
         );
       }
@@ -86,85 +87,124 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.product != null;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.product != null ? 'Edit Produk' : 'Tambah Produk'),
+        title: Text(isEditing ? 'Edit Produk' : 'Tambah Produk'),
+        backgroundColor: const Color(0xFF00695C),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              /// NAMA PRODUK
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Nama Produk',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.medication_outlined, color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) =>
-                    value == null || value.isEmpty
-                        ? 'Nama produk tidak boleh kosong'
-                        : null,
+                value == null || value.isEmpty ? 'Nama produk tidak boleh kosong' : null,
               ),
               const SizedBox(height: 16),
+
+              /// HARGA
               TextFormField(
                 controller: _priceController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Harga',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.attach_money, color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Harga tidak boleh kosong';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Harga harus berupa angka';
-                  }
+                  if (value == null || value.isEmpty) return 'Harga tidak boleh kosong';
+                  if (int.tryParse(value) == null) return 'Harga harus berupa angka';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+
+              /// STOCK
               TextFormField(
                 controller: _stockController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Stock',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.inventory_2_outlined, color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Stock tidak boleh kosong';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Stock harus berupa angka';
-                  }
+                  if (value == null || value.isEmpty) return 'Stock tidak boleh kosong';
+                  if (int.tryParse(value) == null) return 'Stock harus berupa angka';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
+
+              /// KATEGORI
               TextFormField(
                 controller: _categoryController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Kategori (opsional)',
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.category_outlined, color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
+
+              /// BUTTON SIMPAN / UPDATE
               ElevatedButton(
                 onPressed: _isLoading ? null : _saveProduct,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: const Color(0xFF00695C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(widget.product != null ? 'Update' : 'Simpan'),
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : Text(
+                  isEditing ? 'Update Produk' : 'Simpan Produk',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white, // tulisan putih jelas
+                  ),
+                ),
               ),
             ],
           ),

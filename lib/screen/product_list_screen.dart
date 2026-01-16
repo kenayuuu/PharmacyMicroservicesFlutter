@@ -83,55 +83,103 @@ class _ProductListScreenState extends State<ProductListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Daftar Produk'),
+        backgroundColor: const Color(0xFF00695C),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF00695C),
+        ),
+      )
           : _products.isEmpty
-              ? const Center(child: Text('Tidak ada produk'))
-              : RefreshIndicator(
-                  onRefresh: _loadProducts,
-                  child: ListView.builder(
-                    itemCount: _products.length,
-                    itemBuilder: (context, index) {
-                      final product = _products[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: ListTile(
-                          leading: const Icon(Icons.inventory_2),
-                          title: Text(product.name),
-                          subtitle: Text(
-                            'Rp ${product.price} | Stok: ${product.stock}',
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ProductFormScreen(
-                                        product: product,
-                                      ),
-                                    ),
-                                  );
-                                  _loadProducts();
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete),
-                                onPressed: () => _deleteProduct(product.id!),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 80,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Tidak ada produk',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      )
+          : RefreshIndicator(
+        onRefresh: _loadProducts,
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: _products.length,
+          itemBuilder: (context, index) {
+            final product = _products[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Colors.green.shade100,
+                  child: const Icon(
+                    Icons.medication_outlined,
+                    color: Colors.green,
                   ),
                 ),
+                title: Text(
+                  product.name,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'Rp ${product.price} | Stok: ${product.stock}',
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Colors.orange,
+                      ),
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProductFormScreen(
+                                  product: product,
+                                ),
+                          ),
+                        );
+                        _loadProducts();
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.delete,
+                        color: Colors.red,
+                      ),
+                      onPressed: () =>
+                          _deleteProduct(product.id!),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF00695C),
         child: const Icon(Icons.add),
         onPressed: () async {
           await Navigator.push(

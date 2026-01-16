@@ -16,7 +16,6 @@ void main() async {
   runApp(const MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -28,8 +27,68 @@ class MyApp extends StatelessWidget {
         title: 'Apotek Pharmacy',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
+          // 🌿 WARNA UTAMA & GRADIENT KONSISTEN
+          primaryColor: const Color(0xFF00695C),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF00695C),
+            primary: const Color(0xFF00695C),
+            secondary: const Color(0xFF4DB6AC),
+          ),
+          scaffoldBackgroundColor: Colors.grey.shade50,
+
+          // 🔹 AppBar Theme
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Color(0xFF00695C),
+            foregroundColor: Colors.white,
+            elevation: 2,
+          ),
+
+          // 🔹 ElevatedButton Theme
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00695C),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
+
+          // 🔹 Input Fields Theme
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+
+          // 🔹 Card Theme
+          cardTheme: CardTheme(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            shadowColor: Colors.black26,
+          ),
+
+          // 🔹 Typography
+          textTheme: const TextTheme(
+            headlineMedium: TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+            titleLarge: TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+            titleMedium: TextStyle(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
         home: const AuthWrapper(),
       ),

@@ -34,16 +34,10 @@ class AuthProvider extends ChangeNotifier {
     );
 
     _isLoading = false;
-
-    if (result['success'] == true) {
-      _user = result['data'];
-      _isAuthenticated = true;
-      notifyListeners();
-      return true;
-    }
-
     notifyListeners();
-    return false;
+
+    // ✅ HANYA register, TIDAK login
+    return result['success'] == true;
   }
 
   // ================= LOGIN =================
@@ -55,8 +49,8 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     final result = await _authService.login(
-      email: email.trim().toLowerCase(), // 🔑 FIX UTAMA
-      password: password.trim(),         // 🔑 FIX UTAMA
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
     );
 
     _isLoading = false;

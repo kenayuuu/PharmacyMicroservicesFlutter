@@ -14,14 +14,12 @@ class TransactionFormScreen extends StatefulWidget {
       _TransactionFormScreenState();
 }
 
-class _TransactionFormScreenState
-    extends State<TransactionFormScreen> {
+class _TransactionFormScreenState extends State<TransactionFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _trxController = TextEditingController();
   final _noteController = TextEditingController();
 
-  final TransactionService _transactionService =
-      TransactionService();
+  final TransactionService _transactionService = TransactionService();
   final ProductService _productService = ProductService();
 
   List<ProductModel> _products = [];
@@ -44,15 +42,15 @@ class _TransactionFormScreenState
 
       _items = trx.items
           .map((e) => TransactionItem(
-                productName: e.productName,
-                qty: e.qty,
-                price: e.price,
-                subtotal: e.subtotal,
-              ))
+        productName: e.productName,
+        qty: e.qty,
+        price: e.price,
+        subtotal: e.subtotal,
+      ))
           .toList();
     } else {
       _trxController.text =
-          'TRX${DateTime.now().millisecondsSinceEpoch}';
+      'TRX${DateTime.now().millisecondsSinceEpoch}';
     }
   }
 
@@ -124,9 +122,9 @@ class _TransactionFormScreenState
 
     final success = widget.transaction != null
         ? await _transactionService.updateTransaction(
-            widget.transaction!.trx,
-            transaction,
-          )
+      widget.transaction!.trx,
+      transaction,
+    )
         : await _transactionService.createTransaction(transaction);
 
     setState(() => _isLoading = false);
@@ -139,6 +137,7 @@ class _TransactionFormScreenState
           content: Text(widget.transaction != null
               ? 'Transaksi berhasil diupdate'
               : 'Transaksi berhasil dibuat'),
+          backgroundColor: const Color(0xFF00695C),
         ),
       );
       Navigator.of(context).pop(true);
@@ -152,129 +151,176 @@ class _TransactionFormScreenState
   @override
   Widget build(BuildContext context) {
     final total = _calculateTotal();
+    final isEditing = widget.transaction != null;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.transaction != null
-            ? 'Edit Transaksi'
-            : 'Tambah Transaksi'),
+        title: Text(isEditing ? 'Edit Transaksi' : 'Tambah Transaksi'),
+        backgroundColor: const Color(0xFF00695C),
       ),
       body: _loadingProducts
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: _trxController,
-                      decoration: const InputDecoration(
-                        labelText: 'Transaction ID',
-                        border: OutlineInputBorder(),
-                      ),
-                      enabled: widget.transaction == null,
-                      validator: (v) =>
-                          v == null || v.isEmpty
-                              ? 'TRX tidak boleh kosong'
-                              : null,
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedPaymentMethod,
-                      decoration: const InputDecoration(
-                        labelText: 'Payment Method',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'cash', child: Text('Cash')),
-                        DropdownMenuItem(
-                            value: 'card', child: Text('Card')),
-                        DropdownMenuItem(
-                            value: 'transfer',
-                            child: Text('Transfer')),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => _selectedPaymentMethod = v!),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Note (opsional)',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 24),
+        padding: const EdgeInsets.all(20),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              /// TRANSACTION ID
+              TextFormField(
+                controller: _trxController,
+                decoration: InputDecoration(
+                  labelText: 'Transaction ID',
+                  prefixIcon: const Icon(Icons.confirmation_num,
+                      color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                enabled: widget.transaction == null,
+                validator: (v) => v == null || v.isEmpty
+                    ? 'TRX tidak boleh kosong'
+                    : null,
+              ),
+              const SizedBox(height: 16),
 
-                    /// ITEMS
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Items (${_items.length})',
-                          style:
-                              Theme.of(context).textTheme.titleMedium,
-                        ),
-                        ElevatedButton.icon(
-                          onPressed: _addItem,
-                          icon: const Icon(Icons.add),
-                          label: const Text('Tambah Item'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ..._items.asMap().entries.map((e) {
-                      final item = e.value;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          title: Text(item.productName),
-                          subtitle: Text(
-                            '${item.qty} x '
-                            '${CurrencyFormatter.rupiah(item.price)}'
-                            ' = ${CurrencyFormatter.rupiah(item.subtotal)}',
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () => _removeItem(e.key),
-                          ),
-                        ),
-                      );
-                    }),
+              /// PAYMENT METHOD
+              DropdownButtonFormField<String>(
+                value: _selectedPaymentMethod,
+                decoration: InputDecoration(
+                  labelText: 'Payment Method',
+                  prefixIcon:
+                  const Icon(Icons.payment, color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                  DropdownMenuItem(value: 'card', child: Text('Card')),
+                  DropdownMenuItem(
+                      value: 'transfer', child: Text('Transfer')),
+                ],
+                onChanged: (v) =>
+                    setState(() => _selectedPaymentMethod = v!),
+              ),
+              const SizedBox(height: 16),
 
-                    const Divider(),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        'TOTAL: ${CurrencyFormatter.rupiah(total)}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _saveTransaction,
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : const Text('Simpan'),
-                    ),
-                  ],
+              /// NOTE
+              TextFormField(
+                controller: _noteController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Note (opsional)',
+                  prefixIcon: const Icon(Icons.note,
+                      color: Color(0xFF00695C)),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 24),
+
+              /// ITEMS HEADER
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Items (${_items.length})',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  ElevatedButton.icon(
+                    onPressed: _addItem,
+                    // icon: const Icon(Icons.add),
+                    label: const Text('Tambah Item'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: const Color(0xFF00695C),
+                      foregroundColor: Colors.white, // <-- ini yang bikin teks putih
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              /// ITEMS LIST
+              ..._items.asMap().entries.map((e) {
+                final item = e.value;
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    title: Text(item.productName),
+                    subtitle: Text(
+                        '${item.qty} x ${CurrencyFormatter.rupiah(item.price)} = ${CurrencyFormatter.rupiah(item.subtotal)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _removeItem(e.key),
+                    ),
+                  ),
+                );
+              }),
+
+              const Divider(),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'TOTAL: ${CurrencyFormatter.rupiah(total)}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              /// SAVE / UPDATE BUTTON
+              ElevatedButton(
+                onPressed: _isLoading ? null : _saveTransaction,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  backgroundColor: const Color(0xFF00695C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : Text(
+                  isEditing
+                      ? 'Update Transaksi'
+                      : 'Simpan Transaksi',
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
 /* ================= ADD ITEM DIALOG ================= */
-
 class _AddItemDialog extends StatefulWidget {
   final List<ProductModel> products;
   final Function(TransactionItem) onAdd;
@@ -285,8 +331,7 @@ class _AddItemDialog extends StatefulWidget {
   });
 
   @override
-  State<_AddItemDialog> createState() =>
-      _AddItemDialogState();
+  State<_AddItemDialog> createState() => _AddItemDialogState();
 }
 
 class _AddItemDialogState extends State<_AddItemDialog> {
@@ -326,29 +371,65 @@ class _AddItemDialogState extends State<_AddItemDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // LABEL PRODUK MANUAL agar terlihat jelas
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Produk',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           DropdownButtonFormField<ProductModel>(
-            decoration: const InputDecoration(
-              labelText: 'Produk',
-              border: OutlineInputBorder(),
+            value: _selectedProduct,
+            decoration: InputDecoration(
+              hintText: 'Pilih Produk',
+              prefixIcon: const Icon(Icons.inventory_2_outlined, color: Color(0xFF00695C)),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
             items: widget.products
                 .map(
                   (p) => DropdownMenuItem(
-                    value: p,
-                    child:
-                        Text('${p.name} (Stock: ${p.stock})'),
-                  ),
-                )
+                value: p,
+                child: Text('${p.name} (Stock: ${p.stock})'),
+              ),
+            )
                 .toList(),
             onChanged: (v) => setState(() => _selectedProduct = v),
           ),
           const SizedBox(height: 16),
+
+          // LABEL QUANTITY
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Quantity',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
           TextFormField(
             controller: _qtyController,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Quantity',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.format_list_numbered, color: Color(0xFF00695C)),
+              filled: true,
+              fillColor: Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
             ),
           ),
         ],
@@ -360,7 +441,21 @@ class _AddItemDialogState extends State<_AddItemDialog> {
         ),
         ElevatedButton(
           onPressed: _addItem,
-          child: const Text('Tambah'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            backgroundColor: const Color(0xFF00695C),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            'Tambah',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
         ),
       ],
     );
