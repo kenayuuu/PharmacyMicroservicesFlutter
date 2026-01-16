@@ -9,14 +9,31 @@ import 'transaction_list_screen.dart';
 import 'review_list_screen.dart';
 import 'report_transaction_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final UserData? user = authProvider.user;
     final bool isOwner = user != null && user.role == 'owner';
+
+    /// LIST HALAMAN SESUAI TAB
+    final List<Widget> pages = [
+      _homeContent(user),
+      const ProductListScreen(),
+      const TransactionListScreen(),
+      const ReviewListScreen(),
+      if (isOwner) const UserListScreen(),
+      if (isOwner) const ReportTransactionScreen(),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -30,209 +47,145 @@ class HomeScreen extends StatelessWidget {
               authProvider.logout();
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
-                  builder: (context) => const LoginScreen(),
+                  builder: (_) => const LoginScreen(),
                 ),
               );
             },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// HEADER USER INFO
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF4DB6AC),
-                    Color(0xFF00695C),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      color: Color(0xFF00695C),
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Selamat Datang 👋',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.name ?? '',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Role: ${user != null ? user.role.toUpperCase() : ""}',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 24),
+      /// BODY BERDASARKAN TAB
+      body: pages[_currentIndex],
 
-            /// MENU GRID
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: [
-                  _buildMenuCard(
-                    context,
-                    icon: Icons.medication_outlined,
-                    title: 'Produk',
-                    color: Colors.green,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          const ProductListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context,
-                    icon: Icons.shopping_cart_outlined,
-                    title: 'Transaksi',
-                    color: Colors.orange,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          const TransactionListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context,
-                    icon: Icons.reviews_outlined,
-                    title: 'Review',
-                    color: Colors.blue,
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          const ReviewListScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  if (isOwner) ...[
-                    _buildMenuCard(
-                      context,
-                      icon: Icons.people_outline,
-                      title: 'Users',
-                      color: Colors.purple,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                            const UserListScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildMenuCard(
-                      context,
-                      icon: Icons.bar_chart_outlined,
-                      title: 'Laporan',
-                      color: Colors.red,
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) =>
-                            const ReportTransactionScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ],
-              ),
+      /// BOTTOM NAVBAR
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFF00695C),
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.medication_outlined),
+            label: 'Produk',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart_outlined),
+            label: 'Transaksi',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.reviews_outlined),
+            label: 'Review',
+          ),
+          if (isOwner)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.people_outline),
+              label: 'Users',
             ),
-          ],
-        ),
+          if (isOwner)
+            const BottomNavigationBarItem(
+              icon: Icon(Icons.bar_chart_outlined),
+              label: 'Laporan',
+            ),
+        ],
       ),
     );
   }
 
-  /// MENU CARD
-  Widget _buildMenuCard(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required Color color,
-        required VoidCallback onTap,
-      }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  size: 36,
-                  color: color,
-                ),
+  /// ================= HOME CONTENT =================
+  Widget _homeContent(UserData? user) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF4DB6AC),
+                  Color(0xFF00695C),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
-              ),
-            ],
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 28,
+                  backgroundColor: Colors.white,
+                  child: Icon(
+                    Icons.person,
+                    color: Color(0xFF00695C),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Selamat Datang 👋',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.name ?? '',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Role: ${user?.role.toUpperCase() ?? ""}',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+
+          const SizedBox(height: 24),
+
+          /// INFO HOME (BISA DITAMBAH KONTEN)
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: const [
+                  Icon(Icons.info_outline, color: Color(0xFF00695C)),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Gunakan menu di bawah untuk mengelola produk, transaksi, dan data lainnya.',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
